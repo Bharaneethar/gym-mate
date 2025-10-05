@@ -125,7 +125,7 @@ const Diet: React.FC = () => {
     const mealOrder: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
     return (
-        <div className="p-4 space-y-6">
+        <div className="p-4 space-y-6 pb-24">
             <h1 className="text-2xl font-bold text-gray-800">Diet</h1>
             
             <Calendar
@@ -231,7 +231,7 @@ const Diet: React.FC = () => {
 
             <button
                 onClick={() => setIsModalOpen(true)}
-                className="fixed bottom-24 right-4 h-16 w-16 bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-emerald-700 transition-transform transform hover:scale-110 z-40"
+                className="fixed bottom-20 right-4 h-16 w-16 bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-emerald-700 transition-transform transform hover:scale-110 z-40"
                 aria-label="Log new meal"
             >
                 <PlusIcon className="w-8 h-8" />

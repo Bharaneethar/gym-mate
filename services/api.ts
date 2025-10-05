@@ -520,7 +520,6 @@ export const getWorkoutVolumeHistory = async(category?: ExerciseCategory): Promi
             const log = data.workoutLogs[dayStr];
             if (log) {
                  weeklyVolume += log.exercises
-                    // FIX: Removed comparison of `category` to 'All' as the type `ExerciseCategory` does not include 'All'. The `!category` check correctly handles the "all" case.
                     .filter(ex => !category || exerciseMap.get(ex.exerciseId) === category)
                     .reduce((total, ex) => total + ex.sets.reduce((sum, set) => sum + ((parseInt(set.reps) || 0) * (parseInt(set.weight) || 0)), 0), 0);
             }

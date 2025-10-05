@@ -11,7 +11,6 @@ export interface Profile {
 export interface UserProfile extends Profile {
     height: number; // in cm
     weight: number; // in kg
-    // FIX: Add weightHistory to UserProfile type to resolve multiple errors.
     weightHistory?: HistoricalDataPoint[];
     prs: {
         bench: number; // in kg

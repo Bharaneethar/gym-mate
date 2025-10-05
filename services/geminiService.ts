@@ -16,7 +16,20 @@ const getApiKey = () => {
     return apiKey;
 }
 
+// --- Caching for AI Coach Tip ---
+const tipCache = new Map<string, { tip: string; timestamp: number }>();
+const TIP_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 export const getAiCoachTip = async (context?: UserDataContext): Promise<string> => {
+  const now = Date.now();
+  const cacheKey = JSON.stringify(context || {});
+  const cachedEntry = tipCache.get(cacheKey);
+
+  // Return cached tip if it's not expired
+  if (cachedEntry && (now - cachedEntry.timestamp < TIP_CACHE_DURATION)) {
+    return cachedEntry.tip;
+  }
+
   try {
     const apiKey = getApiKey();
     if (!apiKey) {
@@ -39,7 +52,11 @@ export const getAiCoachTip = async (context?: UserDataContext): Promise<string> 
         }
     });
 
-    return response.text;
+    const newTip = response.text;
+    // Cache the new tip
+    tipCache.set(cacheKey, { tip: newTip, timestamp: now });
+    return newTip;
+
   } catch (error) {
     console.error("Error fetching AI coach tip:", error);
     return "Consistency is your superpower. Keep showing up for yourself!";
@@ -93,36 +110,69 @@ export const getAiGoalPlan = async (profile: UserProfile, targetWeight: number, 
             return `### Diet Plan\n- Focus on whole foods.\n- Drink plenty of water.\n\n### Exercise Plan\n- Stay consistent with your workouts.\n- Ensure you get adequate rest.`;
         }
         const weightGoal = targetWeight > profile.weight ? 'gain' : 'lose';
-        const prompt = `Act as an expert fitness and nutrition coach. A user needs a plan to achieve a fitness goal.
-        
-        **User's Data:**
+        const prompt = `Act as an expert fitness and nutrition coach. My user wants to ${weightGoal} weight.
+
+        Here is my profile:
         - Current Weight: ${profile.weight} kg
         - Height: ${profile.height} cm
-        - Goal: Reach ${targetWeight} kg by ${targetDate} (a weight ${weightGoal}).
+        - 1-Rep Maxes: Bench: ${profile.prs.bench}kg, Squat: ${profile.prs.squat}kg, Deadlift: ${profile.prs.deadlift}kg
         
-        **Task:**
-        Generate a high-level, safe, and encouraging diet and exercise plan.
-        
-        **Output Format (use Markdown):**
-        - Start with a positive, one-sentence motivational statement.
-        - Use a "### Diet Plan" heading. Provide 3-4 bullet points with actionable dietary advice (e.g., calorie targets, macro suggestions, food types to focus on).
-        - Use a "### Exercise Pattern" heading. Provide 3-4 bullet points on workout structure (e.g., recommended weekly frequency of strength vs. cardio, exercises to prioritize based on their goal).
-        - Conclude with a short disclaimer that this is a general suggestion and not medical advice.
-        
-        Keep the entire response concise and easy to understand.`;
+        My goal is to reach ${targetWeight} kg by ${targetDate}.
 
+        Please generate a concise, actionable diet and exercise plan for me.
+        - Use markdown for formatting.
+        - Use ### for headers (e.g., ### Diet Plan).
+        - Use bullet points for recommendations.
+        - The plan should be simple and easy to follow.
+        - Provide 3-4 key points for diet and 3-4 for exercise.
+        - Keep the entire response under 150 words.`;
+        
         const ai = new GoogleGenAI({ apiKey });
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
-            config: { temperature: 0.7 }
+            config: {
+                temperature: 0.7
+            }
         });
 
         return response.text.trim();
-
     } catch (error) {
-        console.error("Error generating goal plan:", error);
-        return "Could not generate a plan at this time. Focus on consistent workouts and a balanced diet.";
+        console.error("Error generating AI goal plan:", error);
+        return "Could not generate a plan. Please check your inputs and try again.";
+    }
+};
+
+export const getAiWeeklyWorkoutPlan = async (profile: UserProfile): Promise<string> => {
+    try {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            return `### Weekly Split\n- **Day 1:** Full Body Strength\n- **Day 2:** Rest\n- **Day 3:** Full Body Strength\n- **Day 4:** Rest\n- **Day 5:** Full Body Strength\n- **Day 6 & 7:** Active Recovery / Rest`;
+        }
+        const prompt = `Act as an expert fitness coach. Based on my profile below, create a concise 3-day per week workout split for me.
+
+        Profile:
+        - Weight: ${profile.weight} kg
+        - Height: ${profile.height} cm
+        - 1-Rep Maxes: Bench: ${profile.prs.bench}kg, Squat: ${profile.prs.squat}kg, Deadlift: ${profile.prs.deadlift}kg
+
+        Requirements:
+        - Use markdown for formatting.
+        - Use ### for the main header.
+        - Use **- Day X:** for each day's title.
+        - List 2-3 key exercises for each day.
+        - Keep the entire response under 100 words.`;
+        
+        const ai = new GoogleGenAI({ apiKey });
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+
+        return response.text.trim();
+    } catch (error) {
+        console.error("Error generating AI workout plan:", error);
+        return "Could not generate a weekly workout plan at this time.";
     }
 }
 
@@ -130,78 +180,44 @@ export const getAiMealSuggestion = async (): Promise<string> => {
     try {
         const apiKey = getApiKey();
         if (!apiKey) {
-            return "A balanced meal of grilled chicken, brown rice, and steamed vegetables is a great option.";
+            return "A grilled chicken salad with a light vinaigrette.";
         }
-        const prompt = `I'm looking for a healthy and simple meal idea. Suggest one specific meal (e.g., for lunch or dinner). Keep the description to two sentences. Mention the key ingredients.`;
+        const prompt = "Suggest a simple, healthy, high-protein meal idea. Keep it under 15 words.";
         const ai = new GoogleGenAI({ apiKey });
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
-            config: { temperature: 0.9 }
+            config: {
+                temperature: 0.9,
+                thinkingConfig: { thinkingBudget: 0 }
+            }
         });
         return response.text.trim();
     } catch (error) {
-        console.error("Error fetching meal suggestion:", error);
-        return "Try a protein-packed salad with your favorite greens and veggies.";
+        console.error("Error fetching AI meal suggestion:", error);
+        return "Try something with lean protein and plenty of vegetables!";
     }
-}
+};
 
 export const getAiWorkoutSuggestion = async (): Promise<string> => {
     try {
         const apiKey = getApiKey();
         if (!apiKey) {
-            return "How about a 30-minute brisk walk or a full-body strength routine focusing on compound movements?";
+            return "Try 3 sets of 12 bodyweight squats.";
         }
-        const prompt = `I need a workout idea for today. Suggest a specific type of workout (e.g., upper body strength, HIIT, active recovery). Provide a brief, one-sentence rationale for why it's a good choice.`;
+        const prompt = "Suggest a quick, effective workout idea or a single exercise to try. Keep it under 15 words.";
         const ai = new GoogleGenAI({ apiKey });
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
-            config: { temperature: 0.9 }
+            config: {
+                temperature: 0.9,
+                thinkingConfig: { thinkingBudget: 0 }
+            }
         });
         return response.text.trim();
     } catch (error) {
-        console.error("Error fetching workout suggestion:", error);
-        return "Consider some active recovery today, like stretching or foam rolling, to help your muscles repair.";
-    }
-}
-
-
-export const getAiWeeklyWorkoutPlan = async (profile: UserProfile): Promise<string> => {
-    try {
-        const apiKey = getApiKey();
-        if (!apiKey) {
-            return `### Plan for the Week\n- Monday: Upper Body\n- Tuesday: Lower Body\n- Wednesday: Rest\n- Thursday: Upper Body\n- Friday: Lower Body\n- Saturday: Active Recovery\n- Sunday: Rest`;
-        }
-        const prompt = `Act as an expert personal trainer creating a weekly workout schedule for a user.
-
-        **User Profile:**
-        - Current Weight: ${profile.weight} kg
-        - Bench Press 1RM: ${profile.prs.bench} kg
-        - Squat 1RM: ${profile.prs.squat} kg
-        
-        **Task:**
-        Generate a balanced 7-day workout schedule.
-        - Specify which days are for training and which are rest days.
-        - For training days, suggest a clear focus (e.g., 'Push Day - Chest/Shoulders/Triceps', 'Leg Day', 'Full Body Strength', 'Active Recovery').
-        - The plan should be effective and sustainable.
-        
-        **Output Format (use Markdown):**
-        - Start with a motivational title like "### Your AI-Generated Weekly Plan".
-        - Use a bulleted list for each day of the week (e.g., "- **Monday:** Push Day (Chest, Shoulders, Triceps)").
-        - Do not list specific exercises, only the high-level training focus for each day.`;
-
-        const ai = new GoogleGenAI({ apiKey });
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: { temperature: 0.6 }
-        });
-
-        return response.text.trim();
-
-    } catch (error) {
-        console.error("Error generating weekly plan:", error);
-        return "Could not generate a plan. A good starting point is alternating between upper and lower body workouts with rest days in between.";
+        console.error("Error fetching AI workout suggestion:", error);
+        return "A brisk 20-minute walk is always a great choice!";
     }
 };

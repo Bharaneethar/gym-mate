@@ -38,6 +38,7 @@ const formatDate = (date: Date): string => date.toISOString().split('T')[0];
 const Workout: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isSavingTemplate, setIsSavingTemplate] = useState(false);
     const [exercises, setExercises] = useState<Exercise[]>([]);
     const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -185,6 +186,30 @@ const Workout: React.FC = () => {
             setIsSaving(false);
         }
     };
+
+    const handleSaveAsTemplate = async () => {
+        if (currentWorkout.length === 0) {
+            alert("Add at least one exercise to save a template.");
+            return;
+        }
+
+        const templateName = prompt("Enter a name for your new template:");
+        if (templateName) {
+            setIsSavingTemplate(true);
+            try {
+                await saveWorkoutTemplate(templateName, currentWorkout);
+                alert("Template saved successfully!");
+                // Refresh templates
+                const newTemplates = await getWorkoutTemplates();
+                setTemplates(newTemplates);
+            } catch (error) {
+                console.error("Failed to save template:", error);
+                alert("Could not save template. Please try again.");
+            } finally {
+                setIsSavingTemplate(false);
+            }
+        }
+    };
     
     const handleGeneratePlan = async () => {
         if (!userProfile) return;
@@ -320,8 +345,21 @@ const Workout: React.FC = () => {
             </div>
 
             {currentWorkout.length > 0 && (
-                <div className="grid grid-cols-1 gap-4">
-                    <button onClick={handleFinishWorkout} disabled={isSaving} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-md hover:bg-emerald-700 transition-colors disabled:bg-emerald-300">{isSaving ? 'Saving...' : 'Finish & Save Workout'}</button>
+                <div className="grid grid-cols-2 gap-4">
+                    <button 
+                        onClick={handleSaveAsTemplate} 
+                        disabled={isSaving || isSavingTemplate} 
+                        className="w-full py-3 bg-gray-200 text-gray-800 font-bold rounded-xl shadow-md hover:bg-gray-300 transition-colors disabled:bg-gray-400 disabled:text-gray-600"
+                    >
+                        {isSavingTemplate ? 'Saving...' : 'Save Template'}
+                    </button>
+                    <button 
+                        onClick={handleFinishWorkout} 
+                        disabled={isSaving || isSavingTemplate} 
+                        className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-md hover:bg-emerald-700 transition-colors disabled:bg-emerald-300"
+                    >
+                        {isSaving ? 'Saving...' : 'Finish Workout'}
+                    </button>
                 </div>
             )}
         </div>

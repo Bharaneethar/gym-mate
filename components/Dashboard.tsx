@@ -1,26 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import MotivationalCard from './MotivationalCard';
-import FocusCard from './FocusCard';
-import ProgressCard from './ProgressCard';
-import FuelCard from './FuelCard';
 import AiCoachCard from './AiCoachCard';
 import CheatMealModal from './CheatMealModal';
+import DailyRecapCard from './DailyRecapCard';
+import WeeklyActivityCard from './WeeklyActivityCard';
+import FuelCard from './FuelCard';
 
 import {
   getProfile,
   getTodaysFocus,
   getYesterdaysPerformance,
-  getWeightProgress,
   getTodaysFuel,
 } from '../services/api';
 import { getAiDailyBriefing } from '../services/geminiService';
-import type { Profile, DailyFocus, ProgressData, DailyFuel } from '../types';
+import type { Profile, DailyFocus, DailyFuel } from '../types';
 
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [focusData, setFocusData] = useState<DailyFocus | null>(null);
-  const [progressData, setProgressData] = useState<ProgressData[] | null>(null);
   const [fuelData, setFuelData] = useState<DailyFuel | null>(null);
   const [dailyBriefing, setDailyBriefing] = useState<string | null>(null);
   const [isBriefingLoading, setIsBriefingLoading] = useState(true);
@@ -31,17 +29,15 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       setIsBriefingLoading(true);
 
-      const [profileRes, focusRes, performanceRes, progressRes, fuelRes] = await Promise.all([
+      const [profileRes, focusRes, performanceRes, fuelRes] = await Promise.all([
         getProfile(),
         getTodaysFocus(),
         getYesterdaysPerformance(),
-        getWeightProgress(),
         getTodaysFuel(),
       ]);
       
       setProfile(profileRes);
       setFocusData(focusRes);
-      setProgressData(progressRes);
       setFuelData(fuelRes);
 
       if (profileRes && performanceRes && focusRes) {
@@ -62,7 +58,7 @@ const Dashboard: React.FC = () => {
   }, [fetchDashboardData]);
 
   const handleMealLogged = () => {
-    // Re-fetch only the necessary data, or all for simplicity
+    // Re-fetch all data to ensure dashboard is up-to-date
     fetchDashboardData();
   };
 
@@ -70,10 +66,10 @@ const Dashboard: React.FC = () => {
     return (
       <div className="p-4 space-y-4">
         <div className="h-24 bg-gray-200 rounded-xl animate-pulse"></div>
-        <div className="h-48 bg-gray-200 rounded-xl animate-pulse"></div>
+        <div className="h-96 bg-gray-200 rounded-xl animate-pulse"></div>
         <div className="h-40 bg-gray-200 rounded-xl animate-pulse"></div>
         <div className="h-28 bg-gray-200 rounded-xl animate-pulse"></div>
-        <div className="h-24 bg-gray-200 rounded-xl animate-pulse"></div>
+        <div className="h-32 bg-gray-200 rounded-xl animate-pulse"></div>
       </div>
     );
   }
@@ -81,8 +77,8 @@ const Dashboard: React.FC = () => {
   return (
     <div className="p-4 space-y-4">
       <MotivationalCard briefing={dailyBriefing} isLoading={isBriefingLoading} />
-      <FocusCard data={focusData} />
-      <ProgressCard data={progressData} />
+      <DailyRecapCard data={focusData} />
+      <WeeklyActivityCard />
       <FuelCard data={fuelData} onLogCheatMeal={() => setIsCheatMealModalOpen(true)} />
       <AiCoachCard focusData={focusData} fuelData={fuelData} />
       {isCheatMealModalOpen && (

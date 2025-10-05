@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { logMeal } from '../services/api';
+import { logCheatMeal } from '../services/api';
 import { XIcon } from './icons/XIcon';
 
 interface CheatMealModalProps {
@@ -23,15 +23,7 @@ const CheatMealModal: React.FC<CheatMealModalProps> = ({ onClose, onMealLogged }
         setError('');
         setIsSaving(true);
         try {
-            const today = new Date().toISOString().split('T')[0];
-            await logMeal(today, {
-                name,
-                calories: parseInt(calories, 10),
-                type: 'Snack', // Log cheat meals as snacks
-                protein: 0,
-                carbs: 0,
-                fat: 0,
-            });
+            await logCheatMeal(name, parseInt(calories, 10));
             onMealLogged();
             onClose();
         } catch (err) {

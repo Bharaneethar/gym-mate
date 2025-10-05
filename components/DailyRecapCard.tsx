@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { DumbbellIcon } from './icons/DumbbellIcon';
 import { UtensilIcon } from './icons/UtensilIcon';
 import { WaterDropIcon } from './icons/WaterDropIcon';
-// FIX: The function getTodaysDietLog does not exist. It has been replaced with getDietLogForDate.
 import { getDietLogForDate } from '../services/api';
 import { getAiMealSuggestion } from '../services/geminiService';
 import type { DailyFocus } from '../types';
@@ -64,7 +63,6 @@ const DailyRecapCard: React.FC<DailyRecapCardProps> = ({ data }) => {
 
     useEffect(() => {
         const fetchDietData = async () => {
-            // FIX: The function getTodaysDietLog does not exist. It has been replaced with getDietLogForDate.
             const dietLog = await getDietLogForDate(new Date().toISOString().split('T')[0]);
             if (dietLog) {
                 setCalories({
