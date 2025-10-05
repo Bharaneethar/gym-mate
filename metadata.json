@@ -1,0 +1,5 @@
+{
+  "name": "GymMate: AI Fitness Coach",
+  "description": "A user-friendly, mobile-first web application that acts as a personal gym companion. It helps users track workouts, manage their diet, and stay motivated with AI-powered suggestions and encouragement.",
+  "requestFramePermissions": []
+}
